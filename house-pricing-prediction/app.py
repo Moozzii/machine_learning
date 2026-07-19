@@ -1,14 +1,17 @@
 import streamlit as st
 import pandas as pd
+from pathlib import Path
 import joblib
+
 
 st.set_page_config(
     page_title="House Price Predictor",
     page_icon="🏠",
     layout="wide"
 )
+BASE_DIR = Path(__file__).parent
 
-model = joblib.load("house_price_model.pkl")
+model = joblib.load(BASE_DIR / "house_price_model.pkl")
 
 st.title("🏠 Ames House Price Predictor")
 
