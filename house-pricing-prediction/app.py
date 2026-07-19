@@ -75,3 +75,8 @@ Competition:
 Kaggle House Prices
 """)
 
+st.divider()
+
+st.caption(
+    "Built by Moez • Scikit-learn • Streamlit • Kaggle Ames Housing Dataset"
+)
