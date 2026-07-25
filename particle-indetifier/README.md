@@ -1,59 +1,145 @@
-# 🔬 High-Energy Particle Identification Classifier
+# 🔬 High-Energy Particle Identification using Softmax Regression
 
-[![Open In Colab](https://google.com)](https://google.com)
+A multi-class particle classifier built with **Scikit-Learn** and trained on **1,000,000 simulated detector tracks**. The model identifies four types of particles from detector measurements:
 
-A multi-class Softmax classifier built with Scikit-Learn and trained on **1,000,000 rows** of simulated high-energy physics detector tracks. The pipeline reliably classifies four overlapping subatomic particles: **Pions, Protons, Kaons, and Positrons**.
+- Kaons
+- Pions
+- Positrons
+- Protons
 
-## 🚀 The Engineering Challenge
-In true experimental environments, background particles (**Pions**) overwhelmingly flood the detector sensors, making target signal carriers (**Positrons**) extremely rare. 
+The objective was **not** to build the most accurate classifier possible, but to explore how far a classical Softmax (multinomial logistic regression) model can be pushed through feature engineering and proper handling of highly imbalanced data.
 
-* **The Class Imbalance**: Positrons account for only **0.3%** of the dataset (3,026 out of 1,000,000 instances).
-* **The Baseline Failure**: A standard unweighted Softmax model suffered from severe gradient swamping. It yielded a misleadingly high global accuracy (~95.7%) but missed almost all minority signals, catching only **1 out of 3,026 true positrons** (0.03% Recall).
-* **The Physics Overlap**: Raw kinematic properties like momentum (`p`) and velocity (`beta`) closely overlap between pions and positrons. A standard flat linear classifier cannot split these boundaries natively.
+---
 
-## 🛠️ Machine Learning Pipeline Architecture
-To solve this without stepping away from Logistic Regression / Softmax, the following data engineering pipeline was established:
+## 📌 Project Motivation
 
-1. **Skew-Correction Transformers**: Heavy right-sided distributions in physical energy deposition features (`ein`, `eout`) were pulled into symmetric bell curves using a `FunctionTransformer(np.log1p)`.
-2. **Feature Boundary Expansion**: Polynomial interactions (`degree=4`) were injected to mathematically bend the feature space, allowing a linear algorithm to trace non-linear, curving particle tracks.
-3. **Loss Function Modification**: Custom class weights inversely proportional to sample density were written into the cross-entropy loss function. This penalized the optimizer **50x harder** for missing a positron than a pion.
+Particle detectors generate enormous amounts of data, but not every particle appears with the same frequency. Some particles are extremely common while others are very rare.
 
+In this dataset:
 
-## 📊 Performance Metrics
+| Particle | Samples |
+|----------|---------:|
+| Pion | 561,856 |
+| Proton | 388,745 |
+| Kaon | 46,373 |
+| Positron | 3,026 |
 
-### Optimized Confusion Matrix
+Positrons represent only **0.3%** of the entire dataset.
+
+A standard Softmax classifier achieved high overall accuracy simply by predicting the majority classes, but almost completely failed to recognize positrons.
+
+The challenge was to improve minority-class detection **without replacing Logistic Regression with a more powerful model.**
+
+---
+
+# 🚀 Approach
+
+The complete workflow was implemented as a Scikit-Learn Pipeline.
+
+### 1. Log Transformation
+
+Energy deposition features (`ein`, `eout`) were heavily skewed.
+
+A `log1p` transformation was applied to make their distributions more suitable for linear classification.
+
+---
+
+### 2. Polynomial Feature Engineering
+
+Since Softmax Regression is a linear classifier, fourth-degree polynomial features were introduced to allow nonlinear decision boundaries.
+
+This significantly improved separation between overlapping particle classes.
+
+---
+
+### 3. Class Weighting
+
+Because positrons are extremely rare, the optimizer naturally focused on the dominant pion class.
+
+Custom class weights were added so that mistakes on minority classes contributed more heavily to the loss function.
+
+This shifted the optimization objective from maximizing accuracy to improving minority-class recall.
+
+---
+
+## 📊 Results
+
+### Confusion Matrix
+
 ```text
-[[ 40206   4977    132   1058]  <- Kaon
- [ 23993 524216   9078   4569]  <- Pion
- [     3    368   2655      0]  <- Positron
- [  8069    248    184 380244]] <- Proton
+[[ 40206   4977    132   1058]
+ [ 23993 524216   9078   4569]
+ [     3    368   2655      0]
+ [  8069    248    184 380244]]
 ```
 
-### Production Classification Report
+### Classification Report
+
 ```text
-              precision    recall  f1-score   support
+              precision    recall  f1-score
 
-        kaon       0.56      0.87      0.68     46373
-        pion       0.99      0.93      0.96    561856
-    positron       0.22      0.88      0.35      3026
-      proton       0.99      0.98      0.98    388745
+Kaon          0.56       0.87      0.68
+Pion          0.99       0.93      0.96
+Positron      0.22       0.88      0.35
+Proton        0.99       0.98      0.98
 
-    accuracy                           0.95   1000000
-   macro avg       0.68      0.91      0.74   1000000
-weighted avg       0.97      0.95      0.95   1000000
+Overall Accuracy: 95%
 ```
-* **Engineering Trade-off Note**: Positron recall skyrocketed from **0.03% to 88%**. In high-energy particle physics, catching rare events is prioritized over false alarms; downstream triggers can filter out the remaining 9,078 pion leaks.
 
-## 📦 How to Use the Saved Pipeline
-The complete, integrated preprocessing and classifier model is serialized in a single workspace bundle.
+---
+
+## 🎯 Key Insight
+
+The original unweighted Softmax model achieved approximately **95.7% accuracy**, but detected almost none of the positrons.
+
+After feature engineering and class balancing:
+
+- Positron Recall improved from **0.03% → 88%**
+- Overall accuracy remained around **95%**
+
+Although precision for positrons decreased, this trade-off is often acceptable in high-energy physics where missing a rare event is generally more costly than generating additional false positives.
+
+---
+
+## 💻 Technologies
+
+- Python
+- NumPy
+- Pandas
+- Scikit-Learn
+- Joblib
+
+---
+
+## 📦 Model Deployment
+
+The complete preprocessing pipeline and trained classifier are serialized into a single file.
 
 ```python
 import joblib
 
-# Load the complete deployment pipeline
-model = joblib.load('detector_particle_pipeline.joblib')
+model = joblib.load("detector_particle_pipeline.joblib")
 
-# Predict raw array shapes smoothly without manual data processing steps
-# Input shape: [p, theta, beta, nphe, ein, eout]
 predictions = model.predict(X_test_raw)
 ```
+
+---
+
+## 📚 What I Learned
+
+This project reinforced several important machine learning concepts:
+
+- Accuracy can be misleading for highly imbalanced datasets.
+- Precision and recall often provide a more meaningful evaluation than overall accuracy.
+- Feature engineering can significantly improve the performance of linear models.
+- Class weighting changes the optimization objective without changing the underlying algorithm.
+- Understanding the problem domain is essential when selecting evaluation metrics.
+
+---
+
+## Future Improvements
+
+- Compare Softmax Regression with XGBoost and Random Forests.
+- Experiment with SMOTE and other resampling techniques.
+- Explore calibrated probability estimates.
+- Investigate neural network classifiers for comparison.
