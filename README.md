@@ -14,6 +14,7 @@ Machine-Learning/
 ├── house-pricing-prediction/
 ├── particle-indetifier/
 ├── pulser_detector/
+├── mental-state-classifier/
 │
 ├── README.md
 ├── LICENSE
@@ -90,6 +91,36 @@ A regression project that predicts residential property prices using classical m
 * Scikit-learn
 * Jupyter Notebook
 * Google Colab
+
+---
+
+🧠 EEG Brainwave Mental State Classification
+
+Classify EEG brainwave signals into three cognitive states using Support Vector Machines.
+
+Mental States
+
+Relaxed
+Concentrating
+Neutral
+
+Techniques
+
+StandardScaler
+Principal Component Analysis (PCA)
+Polynomial SVM
+GridSearchCV
+Hyperparameter Optimization
+
+Performance
+
+Accuracy: 97%
+Macro F1-score: 0.97
+🛠 Technologies
+Python
+NumPy
+Pandas
+Scikit-Learn
 
 ---
 
